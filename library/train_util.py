@@ -1841,11 +1841,24 @@ class FineTuningDataset(BaseDataset):
                     if tags is not None:
                         tags = tags.replace("\n", subset.caption_separator)
 
-                    # add tags to each line of caption
+                    # If both caption and tags exist, randomly pick one for training
                     if caption is not None and tags is not None:
-                        caption = "\n".join(
-                            [f"{line}{subset.caption_separator}{tags}" for line in caption.split("\n") if line.strip() != ""]
-                        )
+                        caption_lines = [line.strip() for line in caption.split("\n") if line.strip() != ""]
+                        candidates = caption_lines + ([tags] if tags.strip() else [])
+                        if candidates:
+                            caption = random.choice(candidates)
+                        else:
+                            caption = ""
+                    elif caption is not None:
+                        caption_lines = [line.strip() for line in caption.split("\n") if line.strip() != ""]
+                        if caption_lines:
+                            caption = random.choice(caption_lines)
+                        else:
+                            caption = ""
+                    elif tags is not None:
+                        caption = tags.strip()
+                    else:
+                        caption = ""
                 else:
                     # use as is
                     if tags is not None and len(tags) > 0:
@@ -2461,7 +2474,7 @@ class MinimalDataset(BaseDataset):
                 input_ids = self.get_input_ids(caption)
                 input_ids_list.append(input_ids)
 
-                captions.append(caption)
+                captions.append(caption)   # for debug_dataset
 
             images = torch.stack(images, dim=0)
             input_ids_list = torch.stack(input_ids_list, dim=0)
@@ -2778,11 +2791,6 @@ def get_git_revision_hash() -> str:
 #     replace_attentions_for_hypernetwork()
 #     # unet is not used currently, but it is here for future use
 #     unet.enable_xformers_memory_efficient_attention()
-#     return
-#     if mem_eff_attn:
-#         unet.set_attn_processor(FlashAttnProcessor())
-#     elif xformers:
-#         unet.enable_xformers_memory_efficient_attention()
 
 
 # def replace_unet_cross_attn_to_xformers():
